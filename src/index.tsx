@@ -1,4 +1,4 @@
-import { ActionPanel, Action, List, showToast, Toast } from "@raycast/api";
+import { ActionPanel, Action, List, showToast, Toast, MenuBarExtra } from "@raycast/api";
 import { useState, useEffect, useRef, useCallback } from "react";
 import fetch, { AbortError } from "node-fetch";
 
@@ -14,23 +14,25 @@ export default function Command() {
     >
       <List.Section title="Results" subtitle={state.results.length + ""}>
         {state.results.map((searchResult) => (
-          <SearchListItem key={searchResult.name} searchResult={searchResult} />
+          <SearchListItem key={searchResult.word} searchResult={searchResult} />
         ))}
       </List.Section>
     </List>
   );
 }
 
+//TODO: Render a list of search results
+
 function SearchListItem({ searchResult }: { searchResult: SearchResult }) {
   return (
     <List.Item
-      title={searchResult.name}
-      subtitle={searchResult.description}
-      accessoryTitle={searchResult.username}
+      title={searchResult.word}
+      subtitle={searchResult.label}
+      // accessoryTitle={searchResult.thesaurus}
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            <Action.OpenInBrowser title="Open in Browser" url={searchResult.url} />
+            {/* <Action.OpenInBrowser title="Open in Browser" url={searchResult.url} /> */}
           </ActionPanel.Section>
           <ActionPanel.Section>
             <Action.CopyToClipboard
@@ -95,36 +97,46 @@ function useSearch() {
 }
 
 async function performSearch(searchText: string, signal: AbortSignal): Promise<SearchResult[]> {
-
-  const response = await fetch("https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + searchText, {
-    method: "get",
-    headers: {
-      'X-RapidAPI-Key': '0208a69dafmsh141a45e16e678d7p179698jsne7ad5c5c314e',
-      'X-RapidAPI-Host': 'lingua-robot.p.rapidapi.com'
-    },
-    // signal: signal,
-  });
-
-  const json = (await response.json()) as
-    | {
-        results: {
-          package: { word: string; shortdef: string; synonyms: string[]; antonyms: string[] };
-        }[];
-      }
-    | { code: string; message: string };
-
-  if (!response.ok || "message" in json) {
-    throw new Error("message" in json ? json.message : response.statusText);
+  // const params = new URLSearchParams();
+  // params.append("key", "ad52d309-3b5d-4ca9-b51b-e987978f6712");
+  if(searchText === "") {
+    return [];
   }
 
-  return json.results.map((result) => {
-    return {
-      word: result.package.word,
-      definition: result.package.shortdef,
-      synonyms: result.package.synonyms,
-      antonyms: result.package.antonyms,
-    };
-  });
+  let returnData: SearchResult[] = [];
+
+  await fetch("https://www.dictionaryapi.com/api/v3/references/thesaurus/json/" + searchText + "?key=ad52d309-3b5d-4ca9-b51b-e987978f6712", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    // signal: signal,
+  }).then((response) => (response.json())).then((data: any) => {
+    for(let i = 0; i < data.length; i++) {
+      if(data[i].meta.id === searchText) {
+        let definitionObj: SearchResult = {
+          word: data[i].meta.id,
+          label: data[i].fl,
+          thesaurus: [],
+        };
+        let thesaurus = [];
+        for(let j = 0; j < data[i].shortdef.length; j++) {
+            thesaurus.push({
+              definition: data[i].shortdef[j] as string,
+              synonyms: data[i].meta.syns[j] as string[],
+              antonyms: data[i].meta.ants[j] as string[],
+            });
+        }
+        definitionObj.thesaurus = thesaurus;
+        returnData.push(definitionObj);
+      } else{
+        break;
+      }
+    }
+
+  }, (error) => {throw new Error(error.message)});
+
+  return returnData;
 }
 
 interface SearchState {
@@ -134,6 +146,11 @@ interface SearchState {
 
 interface SearchResult {
   word: string;
+  label: string;
+  thesaurus: ThesaurusIndex[];
+}
+
+interface ThesaurusIndex {
   definition: string;
   synonyms: string[];
   antonyms: string[];
