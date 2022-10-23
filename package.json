@@ -11,18 +11,35 @@
   "license": "MIT",
   "commands": [
     {
-      "name": "index",
-      "title": "thesaurus",
+      "name": "thesaurus",
+      "title": "Thesaurus",
       "subtitle": "Get synonyms and antonyms",
       "description": "Receives thesaurus results for a given word",
       "mode": "view"
+    },
+    {
+      "name": "synonyms",
+      "title": "Get Synonyms",
+      "description": "Gets the synonyms for a given word",
+      "mode": "view",
+      "subtitle": "Queries for and returns the synonyms for the given word",
+      "icon": "command-icon.png"
+    },
+    {
+      "name": "antonyms",
+      "title": "Get Antonyms",
+      "description": "Gets antonyms of given work",
+      "mode": "view",
+      "icon": "command-icon.png"
     }
   ],
   "dependencies": {
     "@raycast/api": "^1.39.3",
-    "node-fetch": "^3.0.0"
+    "node-fetch": "^3.0.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "eslint": "^7.32.0",
